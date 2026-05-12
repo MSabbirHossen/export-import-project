@@ -9,6 +9,12 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Documentation
+*.md
+!README.md
+
+
+
 # IDE
 .vscode/
 .idea/
