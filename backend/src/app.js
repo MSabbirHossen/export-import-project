@@ -79,6 +79,12 @@ app.use("/api/imports", importRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/notifications", notificationRoutes);
 
+// // Get all products endpoint
+// app.get("/products/all", async (req, res) => {
+//   const products = await Product.find();
+//   res.json(products);
+// });
+
 // 404 Handler (must be before error handler)
 app.use(notFoundHandler);
 
