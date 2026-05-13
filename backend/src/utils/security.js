@@ -53,22 +53,43 @@ const readOperationLimiter = rateLimit({
 // CORS security configuration
 const corsSecurityConfig = {
   origin: (origin, callback) => {
+    console.log("Incoming Origin:", origin);
+
     const allowedOrigins = [
       process.env.FRONTEND_URL || "http://localhost:5173",
+      "http://127.0.0.1:5173",
       "http://localhost:3000",
+      "http://127.0.0.1:3000",
       "http://localhost:5000",
+      "https://import-export-hub-bf41a.web.app",
+      "https://import-export-hub-bf41a.firebaseapp.com",
     ];
 
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+    console.log("Allowed Origins:", allowedOrigins);
+
+    // ✅ DEV SAFE HANDLING (important fix)
+    if (!origin && process.env.NODE_ENV !== "production") {
+      console.log("CORS Allowed (No Origin - Dev Mode)");
+      return callback(null, true);
     }
+
+    if (allowedOrigins.includes(origin)) {
+      console.log("CORS Allowed");
+      return callback(null, true);
+    }
+
+    console.log("CORS Blocked:", origin);
+    return callback(new Error("Not allowed by CORS"), false);
   },
+
   credentials: true,
+
   optionsSuccessStatus: 200,
+
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+
   allowedHeaders: ["Content-Type", "Authorization"],
+
   maxAge: 86400, // 24 hours
 };
 
