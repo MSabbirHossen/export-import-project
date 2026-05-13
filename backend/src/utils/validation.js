@@ -37,7 +37,7 @@ const validatePositiveNumber = (num, max = Infinity, min = 0) => {
 
 // Validate integer
 const validateInteger = (num, max = Infinity, min = 0) => {
-  const parsed = parseInt(num);
+  const parsed = Number(num);
   if (
     isNaN(parsed) ||
     parsed < min ||
@@ -84,7 +84,11 @@ const validateCountry = (country) => {
 // Validate product name
 const validateProductName = (name) => {
   const sanitized = trimString(name);
-  if (sanitized.length < 2 || sanitized.length > 100) {
+  if (
+    sanitized.length < 2 ||
+    sanitized.length > 100 ||
+    /[<>]/.test(sanitized)
+  ) {
     return null;
   }
   return sanitized;
@@ -119,7 +123,7 @@ const sanitizeObject = (obj, allowedFields) => {
     if (field in obj) {
       const value = obj[field];
       if (typeof value === "string") {
-        sanitized[field] = trimString(value);
+        sanitized[field] = trimString(value).replace(/<[^>]*>/g, "");
       } else {
         sanitized[field] = value;
       }

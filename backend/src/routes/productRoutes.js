@@ -22,10 +22,14 @@ const router = express.Router();
 router.get("/latest", asyncHandler(getLatestProducts));
 router.get("/all", asyncHandler(getAllProducts));
 router.get("/search", asyncHandler(searchProducts));
-router.get("/:productId", asyncHandler(getProductById));
 
 // Protected routes
 router.post("/add", verifyAuth, validateAddProduct, asyncHandler(addProduct));
+router.get(
+  "/exports/my-exports",
+  verifyAuth,
+  asyncHandler(getExporterProducts),
+);
 router.put(
   "/:productId",
   verifyAuth,
@@ -33,10 +37,7 @@ router.put(
   asyncHandler(updateProduct),
 );
 router.delete("/:productId", verifyAuth, asyncHandler(deleteProduct));
-router.get(
-  "/exports/my-exports",
-  verifyAuth,
-  asyncHandler(getExporterProducts),
-);
+
+router.get("/:productId", asyncHandler(getProductById));
 
 export default router;
