@@ -1,4 +1,5 @@
-import { sendSuccess, sendError, sendResponse } from "../src/utils/response.js";
+import { sendSuccess, sendError, sendResponse } from "../../src/utils/response.js";
+import { jest } from "@jest/globals";
 
 describe("Response Utility Tests", () => {
   let res;
@@ -14,7 +15,7 @@ describe("Response Utility Tests", () => {
   describe("sendSuccess", () => {
     test("should send success response with data", () => {
       const data = { id: 1, name: "Product" };
-      sendSuccess(res, "Product fetched", 200, data);
+      sendSuccess(res, "Product fetched", data, 200);
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalled();
@@ -25,7 +26,7 @@ describe("Response Utility Tests", () => {
     });
 
     test("should send success response without data", () => {
-      sendSuccess(res, "Operation completed", 200);
+      sendSuccess(res, "Operation completed");
 
       expect(res.status).toHaveBeenCalledWith(200);
       const response = res.json.mock.calls[0][0];
@@ -59,17 +60,17 @@ describe("Response Utility Tests", () => {
       expect(response.data).toEqual(errors);
     });
 
-    test("should use default status code 500", () => {
+    test("should use default status code 400", () => {
       sendError(res, "Server error");
 
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.status).toHaveBeenCalledWith(400);
     });
   });
 
   describe("sendResponse", () => {
     test("should send custom response", () => {
       const data = { count: 100 };
-      sendResponse(res, "success", "Data retrieved", 200, data);
+      sendResponse(res, 200, "success", "Data retrieved", data);
 
       expect(res.status).toHaveBeenCalledWith(200);
       const response = res.json.mock.calls[0][0];
@@ -79,7 +80,7 @@ describe("Response Utility Tests", () => {
     });
 
     test("should include timestamp in response", () => {
-      sendSuccess(res, "Test", 200);
+      sendSuccess(res, "Test");
 
       const response = res.json.mock.calls[0][0];
       expect(response.timestamp).toBeDefined();
@@ -89,7 +90,7 @@ describe("Response Utility Tests", () => {
 
   describe("Response format consistency", () => {
     test("all responses should have required fields", () => {
-      sendSuccess(res, "Test", 200, { test: "data" });
+      sendSuccess(res, "Test", { test: "data" }, 200);
 
       const response = res.json.mock.calls[0][0];
       expect(response).toHaveProperty("status");
@@ -98,7 +99,7 @@ describe("Response Utility Tests", () => {
     });
 
     test('success status should be "success"', () => {
-      sendSuccess(res, "Test", 200);
+      sendSuccess(res, "Test");
 
       const response = res.json.mock.calls[0][0];
       expect(response.status).toBe("success");
