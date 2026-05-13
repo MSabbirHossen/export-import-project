@@ -9,6 +9,7 @@ import {
   importProduct,
   getUserImports,
   getAllImports,
+  getImportById,
   removeImport,
   updateImportQuantity,
   getProductImports,
@@ -24,6 +25,7 @@ router.post(
   asyncHandler(importProduct),
 );
 router.get("/my-imports", verifyAuth, asyncHandler(getUserImports));
+router.get("/:importId", verifyAuth, asyncHandler(getImportById));
 router.delete("/:importId", verifyAuth, asyncHandler(removeImport));
 router.put(
   "/:importId",
