@@ -19,7 +19,7 @@ const options = {
         description: "Development server",
       },
       {
-        url: "https://api.importexport.com/api",
+        url: "https://export-import-backend.vercel.app/api",
         description: "Production server",
       },
     ],

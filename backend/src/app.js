@@ -19,6 +19,14 @@ import {
 
 const app = express();
 
+const apiInfo = {
+  status: "success",
+  message: "Import Export Hub API v1.0",
+  endpoints: {
+    health: "/api/health",
+  },
+};
+
 // Initialize Firebase Admin SDK
 initializeFirebase();
 
@@ -55,21 +63,17 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Root Route
+app.get("/", (req, res) => {
+  res.status(200).json(apiInfo);
+});
+
 // Swagger Documentation Route
 app.use("/api/docs", swaggerRoutes);
 
 // Root API Route
 app.get("/api", (req, res) => {
-  res.status(200).json({
-    status: "success",
-    message: "Import Export Hub API v1.0",
-    endpoints: {
-      health: "/api/health",
-      products: "/api/products",
-      imports: "/api/imports",
-      users: "/api/users",
-    },
-  });
+  res.status(200).json(apiInfo);
 });
 
 // API Routes

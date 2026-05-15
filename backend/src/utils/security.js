@@ -50,35 +50,52 @@ const readOperationLimiter = rateLimit({
   skip: (req) => req.method !== "GET",
 });
 
+const getAllowedOrigins = () => {
+  const configuredOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.FRONTEND_URLS,
+    process.env.ALLOWED_ORIGINS,
+  ]
+    .filter(Boolean)
+    .flatMap((value) => value.split(","))
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  return [
+    ...configuredOrigins,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5000",
+    "https://import-export-hub-client.vercel.app",
+    "https://import-export-hub-bf41a.web.app",
+    "https://import-export-hub-bf41a.firebaseapp.com",
+  ];
+};
+
 // CORS security configuration
 const corsSecurityConfig = {
   origin: (origin, callback) => {
-    console.log("Incoming Origin:", origin);
+    const allowedOrigins = getAllowedOrigins();
 
-    const allowedOrigins = [
-      process.env.FRONTEND_URL || "http://localhost:5173",
-      "http://127.0.0.1:5173",
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "http://localhost:5000",
-      "https://import-export-hub-bf41a.web.app",
-      "https://import-export-hub-bf41a.firebaseapp.com",
-    ];
-
-    console.log("Allowed Origins:", allowedOrigins);
-
-    // ✅ DEV SAFE HANDLING (important fix)
-    if (!origin && process.env.NODE_ENV !== "production") {
-      console.log("CORS Allowed (No Origin - Dev Mode)");
+    // Allow curl, server-to-server, and direct browser navigation requests.
+    if (!origin) {
       return callback(null, true);
     }
 
     if (allowedOrigins.includes(origin)) {
-      console.log("CORS Allowed");
       return callback(null, true);
     }
 
-    console.log("CORS Blocked:", origin);
+    if (
+      process.env.ALLOW_VERCEL_PREVIEWS === "true" &&
+      /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)
+    ) {
+      return callback(null, true);
+    }
+
+    console.warn("CORS blocked origin:", origin);
     return callback(new Error("Not allowed by CORS"), false);
   },
 
