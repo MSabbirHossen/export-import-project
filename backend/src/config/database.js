@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 
+let cachedConnection = null;
+let connectionPromise = null;
+
 const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI;
@@ -8,16 +11,35 @@ const connectDB = async () => {
       throw new Error("MONGODB_URI environment variable is not defined");
     }
 
-    const conn = await mongoose.connect(mongoURI, {
-      maxPoolSize: 10,
-      minPoolSize: 5,
-    });
+    if (cachedConnection && mongoose.connection.readyState === 1) {
+      return cachedConnection;
+    }
 
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    if (!connectionPromise) {
+      connectionPromise = mongoose.connect(mongoURI, {
+        maxPoolSize: 10,
+        minPoolSize: 0,
+        serverSelectionTimeoutMS: 10000,
+      });
+    }
+
+    const conn = await connectionPromise;
+    cachedConnection = conn;
+
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
     return conn;
   } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    process.exit(1);
+    connectionPromise = null;
+    console.error(`MongoDB Connection Error: ${error.message}`);
+    throw error;
+  }
+};
+
+export const disconnectDB = async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+    cachedConnection = null;
+    connectionPromise = null;
   }
 };
 
