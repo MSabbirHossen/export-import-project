@@ -16,49 +16,64 @@ const validateAddProduct = (req, res, next) => {
   try {
     const {
       name,
+      productName,
       image,
+      images,
       price,
+      unitPrice,
       originCountry,
+      country,
       rating,
       availableQuantity,
+      quantity,
       description,
       category,
+      currency,
+      unit,
+      exporterName,
+      specifications,
     } = req.body;
 
     const errors = [];
+    const rawName = name ?? productName;
+    const rawImage = image ?? images?.[0];
+    const rawPrice = price ?? unitPrice;
+    const rawOrigin = originCountry ?? country;
+    const rawRating = rating ?? 0;
+    const rawQuantity = availableQuantity ?? quantity;
 
     // Validate name
-    const validatedName = validateProductName(name);
+    const validatedName = validateProductName(rawName);
     if (!validatedName) {
       errors.push("Product name is required and must be 2-100 characters");
     }
 
     // Validate image URL
-    const validatedImage = validateURL(image);
+    const validatedImage = validateURL(rawImage);
     if (!validatedImage) {
       errors.push("Product image must be a valid URL (http:// or https://)");
     }
 
     // Validate price
-    const validatedPrice = validatePrice(price);
+    const validatedPrice = validatePrice(rawPrice);
     if (validatedPrice === null) {
       errors.push("Product price must be a valid number >= 0");
     }
 
     // Validate originCountry
-    const validatedOrigin = validateCountry(originCountry);
+    const validatedOrigin = validateCountry(rawOrigin);
     if (!validatedOrigin) {
       errors.push("Origin country is required and must be 1-100 characters");
     }
 
     // Validate rating
-    const validatedRating = validateRating(rating);
+    const validatedRating = validateRating(rawRating);
     if (validatedRating === null) {
       errors.push("Product rating must be between 0 and 5");
     }
 
     // Validate availableQuantity
-    const validatedQty = validateQuantity(availableQuantity);
+    const validatedQty = validateQuantity(rawQuantity);
     if (validatedQty === null) {
       errors.push("Available quantity must be a positive integer");
     }
@@ -75,11 +90,20 @@ const validateAddProduct = (req, res, next) => {
     // Attach validated data to request
     req.validatedData = {
       name: validatedName,
+      productName: validatedName,
       image: validatedImage,
+      images: [validatedImage],
       price: validatedPrice,
+      unitPrice: validatedPrice,
       originCountry: validatedOrigin,
+      country: validatedOrigin,
       rating: validatedRating,
       availableQuantity: validatedQty,
+      quantity: validatedQty,
+      currency: trimString(currency || "USD"),
+      unit: trimString(unit || "unit"),
+      exporterName: trimString(exporterName || ""),
+      specifications: specifications || {},
       description: trimString(description || ""),
       category: trimString(category || "General"),
     };
@@ -100,13 +124,22 @@ const validateUpdateProduct = (req, res, next) => {
     const { productId } = req.params;
     const {
       name,
+      productName,
       image,
+      images,
       price,
+      unitPrice,
       originCountry,
+      country,
       rating,
       availableQuantity,
+      quantity,
       description,
       category,
+      currency,
+      unit,
+      exporterName,
+      specifications,
     } = req.body;
 
     // Validate productId
@@ -122,39 +155,47 @@ const validateUpdateProduct = (req, res, next) => {
     const errors = [];
 
     // Validate only provided fields
-    if (name !== undefined) {
-      const validatedName = validateProductName(name);
+    const rawName = name ?? productName;
+    if (rawName !== undefined) {
+      const validatedName = validateProductName(rawName);
       if (!validatedName) {
         errors.push("Product name must be 2-100 characters");
       } else {
         validatedData.name = validatedName;
+        validatedData.productName = validatedName;
       }
     }
 
-    if (image !== undefined) {
-      const validatedImage = validateURL(image);
+    const rawImage = image ?? images?.[0];
+    if (rawImage !== undefined) {
+      const validatedImage = validateURL(rawImage);
       if (!validatedImage) {
         errors.push("Product image must be a valid URL");
       } else {
         validatedData.image = validatedImage;
+        validatedData.images = [validatedImage];
       }
     }
 
-    if (price !== undefined) {
-      const validatedPrice = validatePrice(price);
+    const rawPrice = price ?? unitPrice;
+    if (rawPrice !== undefined) {
+      const validatedPrice = validatePrice(rawPrice);
       if (validatedPrice === null) {
         errors.push("Product price must be a valid number >= 0");
       } else {
         validatedData.price = validatedPrice;
+        validatedData.unitPrice = validatedPrice;
       }
     }
 
-    if (originCountry !== undefined) {
-      const validatedOrigin = validateCountry(originCountry);
+    const rawOrigin = originCountry ?? country;
+    if (rawOrigin !== undefined) {
+      const validatedOrigin = validateCountry(rawOrigin);
       if (!validatedOrigin) {
         errors.push("Origin country must be 1-100 characters");
       } else {
         validatedData.originCountry = validatedOrigin;
+        validatedData.country = validatedOrigin;
       }
     }
 
@@ -167,12 +208,14 @@ const validateUpdateProduct = (req, res, next) => {
       }
     }
 
-    if (availableQuantity !== undefined) {
-      const validatedQty = validateQuantity(availableQuantity);
+    const rawQuantity = availableQuantity ?? quantity;
+    if (rawQuantity !== undefined) {
+      const validatedQty = validateQuantity(rawQuantity);
       if (validatedQty === null) {
         errors.push("Available quantity must be a positive integer");
       } else {
         validatedData.availableQuantity = validatedQty;
+        validatedData.quantity = validatedQty;
       }
     }
 
@@ -182,6 +225,22 @@ const validateUpdateProduct = (req, res, next) => {
 
     if (category !== undefined) {
       validatedData.category = trimString(category);
+    }
+
+    if (currency !== undefined) {
+      validatedData.currency = trimString(currency || "USD");
+    }
+
+    if (unit !== undefined) {
+      validatedData.unit = trimString(unit || "unit");
+    }
+
+    if (exporterName !== undefined) {
+      validatedData.exporterName = trimString(exporterName);
+    }
+
+    if (specifications !== undefined) {
+      validatedData.specifications = specifications || {};
     }
 
     if (errors.length > 0) {
