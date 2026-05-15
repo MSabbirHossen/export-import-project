@@ -45,13 +45,16 @@ Create `backend/.env` from `backend/.env.example`.
 Required backend variables:
 
 ```env
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/import-export-hub?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/test?retryWrites=true&w=majority
 PORT=5000
 NODE_ENV=development
 FIREBASE_PROJECT_ID=your-firebase-project-id
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYourPrivateKeyHere...\n-----END PRIVATE KEY-----\n"
 FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
 FRONTEND_URL=http://localhost:5173
+FRONTEND_URLS=http://localhost:5173,https://import-export-hub-client.vercel.app
+ALLOWED_ORIGINS=http://localhost:5173,https://import-export-hub-client.vercel.app
+ALLOW_VERCEL_PREVIEWS=false
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
 ```
@@ -59,6 +62,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 Manual backend notes:
 
 - Get `MONGODB_URI` from MongoDB Atlas.
+- Include the database name in the URI path. For the current demo data, the 25 products were found in the `test` database, so the URI should include `/test` before the query string.
 - Allow your current IP address in MongoDB Atlas Network Access.
 - Create a Firebase service account from Firebase Console > Project settings > Service accounts.
 - Copy `project_id`, `private_key`, and `client_email` from the service account JSON into the backend `.env`.
@@ -191,10 +195,64 @@ Restart the Vite dev server after changing `.env`.
 
 ## Production Notes
 
-When deploying:
+## Deploy Backend To Vercel
+
+The backend includes:
+
+- `backend/api/index.js`: Vercel serverless entrypoint
+- `backend/vercel.json`: routes all requests to the Express app
+- reusable MongoDB connection handling for serverless requests
+
+Deploy from the `backend` folder, not the client folder.
+
+Vercel project settings:
+
+```text
+Root Directory: backend
+Build Command: npm install
+Output Directory: leave empty
+Install Command: npm install
+```
+
+Add these environment variables in Vercel:
+
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/test?retryWrites=true&w=majority
+NODE_ENV=production
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYourPrivateKeyHere...\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
+FRONTEND_URL=http://localhost:5173
+FRONTEND_URLS=http://localhost:5173,https://import-export-hub-client.vercel.app
+ALLOWED_ORIGINS=http://localhost:5173,https://import-export-hub-client.vercel.app
+ALLOW_VERCEL_PREVIEWS=false
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+```
+
+`MONGODB_URI_MISSING` means the Vercel backend project does not have a variable named exactly `MONGODB_URI` for the deployed environment. Add it under Vercel Project Settings > Environment Variables, select Production, Preview, and Development if needed, then redeploy.
+
+After deployment, test:
+
+```text
+https://your-backend-domain.vercel.app/api/health
+https://your-backend-domain.vercel.app/api
+```
+
+For local client + deployed backend, set the client `.env`:
+
+```env
+VITE_API_URL=https://your-backend-domain.vercel.app/api
+```
+
+Then restart the Vite dev server.
+
+Manual production checklist:
 
 - Set `VITE_API_URL` to the deployed backend URL ending with `/api`.
-- Set `FRONTEND_URL` in the backend to the deployed client URL.
+- Set `FRONTEND_URLS` or `ALLOWED_ORIGINS` in the backend to include every client origin that should call the API.
+- Keep `http://localhost:5173` in `FRONTEND_URLS` or `ALLOWED_ORIGINS` if you want the local client to call the deployed backend.
 - Add the deployed client domain to Firebase authorized domains.
 - Add the deployed backend environment variables in the hosting provider.
+- In MongoDB Atlas, allow Vercel to connect. For the simplest setup, add `0.0.0.0/0` in Network Access; for stricter production security, use a provider with stable outbound IPs.
 - Do not commit real `.env` files or Firebase service account JSON files.
