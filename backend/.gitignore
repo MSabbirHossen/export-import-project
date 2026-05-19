@@ -8,6 +8,7 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+import-export-hub-bf41a-firebase-adminsdk-fbsvc-948debd2b9.json
 
 # Documentation
 *.md

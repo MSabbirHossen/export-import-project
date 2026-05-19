@@ -3,4 +3,9 @@
 !README.md
 !SETUP_DOCUMENTATION.md
 
+node_modules
+
+# Firebase credentials - ensure no service account jsons are committed
+backend/*.json
+
 

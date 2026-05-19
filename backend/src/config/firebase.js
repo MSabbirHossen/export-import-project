@@ -8,22 +8,24 @@ const initializeFirebase = () => {
       return admin;
     }
 
-    const serviceAccount = {
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    };
+    // Build service account from environment variables. Do NOT read files.
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY
+      ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      : undefined;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
-    // Validate credentials
-    if (
-      !serviceAccount.projectId ||
-      !serviceAccount.privateKey ||
-      !serviceAccount.clientEmail
-    ) {
+    if (!projectId || !privateKey || !clientEmail) {
       throw new Error(
-        "Missing Firebase Admin credentials in environment variables",
+        "Missing Firebase Admin credentials in environment variables. Ensure FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY and FIREBASE_CLIENT_EMAIL are set",
       );
     }
+
+    const serviceAccount = {
+      projectId,
+      privateKey,
+      clientEmail,
+    };
 
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
@@ -40,6 +42,27 @@ const initializeFirebase = () => {
 const verifyToken = async (token) => {
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
+
+    // Basic checks - ensure token audience/project matches
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    if (projectId) {
+      const aud = decodedToken.aud || decodedToken.audience;
+      const iss = decodedToken.iss || decodedToken.issuer;
+      if (
+        aud &&
+        aud !== projectId &&
+        aud !== `${projectId}@appspot.gserviceaccount.com`
+      ) {
+        throw new Error("Token audience mismatch");
+      }
+
+      if (iss && !iss.includes(projectId)) {
+        // allow tokens where issuer contains projectId
+        // some tokens may not include issuer in same format; this is a best-effort check
+        console.warn("Token issuer does not include expected project id");
+      }
+    }
+
     return decodedToken;
   } catch (error) {
     throw new Error(`Invalid or expired token: ${error.message}`);
