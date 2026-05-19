@@ -14,42 +14,45 @@ import {
 export const importProduct = async (req, res, next) => {
   try {
     const { productId, quantity } = req.validatedData;
+    // Atomically decrement product available quantity if enough stock exists
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: productId, availableQuantity: { $gte: quantity } },
+      { $inc: { availableQuantity: -quantity } },
+      { new: true },
+    );
 
-    // Get product details
-    const product = await Product.findById(productId);
+    if (!updatedProduct) {
+      // Not enough stock or product not found
+      const existing = await Product.findById(productId).lean();
+      if (!existing) return sendError(res, "Product not found", 404);
 
-    if (!product) {
-      return sendError(res, "Product not found", 404);
-    }
-
-    // Check available quantity
-    if (product.availableQuantity < quantity) {
       return sendError(
         res,
-        `Only ${product.availableQuantity} units available. Requested: ${quantity}`,
+        `Only ${existing.availableQuantity} units available. Requested: ${quantity}`,
         400,
       );
     }
 
-    // Create import record
-    const newImport = new Import({
-      productId,
-      importerId: req.user.uid,
-      importerEmail: req.user.email,
-      quantity,
-      productName: product.name,
-      productPrice: product.price,
-    });
+    // Create import record (if this fails, roll back the product decrement)
+    let newImport = null;
+    try {
+      newImport = new Import({
+        productId,
+        importerId: req.user.uid,
+        importerEmail: req.user.email,
+        quantity,
+        productName: updatedProduct.name,
+        productPrice: updatedProduct.price,
+      });
 
-    // Save import
-    await newImport.save();
-
-    // Decrease product available quantity using $inc operator
-    await Product.findByIdAndUpdate(
-      productId,
-      { $inc: { availableQuantity: -quantity } },
-      { new: true },
-    );
+      await newImport.save();
+    } catch (err) {
+      // Rollback product quantity
+      await Product.findByIdAndUpdate(productId, {
+        $inc: { availableQuantity: quantity },
+      });
+      throw err;
+    }
 
     sendSuccess(res, "Product imported successfully", newImport, 201);
   } catch (error) {
@@ -229,17 +232,37 @@ export const removeImport = async (req, res, next) => {
       );
     }
 
-    // Restore product quantity
-    await Product.findByIdAndUpdate(
-      importRecord.productId,
-      { $inc: { availableQuantity: importRecord.quantity } },
-      { new: true },
-    );
+    // Use a transaction when possible to restore product quantity and delete import atomically
+    const session = await Import.startSession();
+    try {
+      let transactionResults = null;
 
-    // Delete import record
-    await Import.findByIdAndDelete(importId);
+      await session.withTransaction(async () => {
+        await Product.findByIdAndUpdate(
+          importRecord.productId,
+          { $inc: { availableQuantity: importRecord.quantity } },
+          { session },
+        );
 
-    sendSuccess(res, "Import removed successfully", null);
+        await Import.findByIdAndDelete(importId, { session });
+      });
+
+      session.endSession();
+
+      sendSuccess(res, "Import removed successfully", null);
+    } catch (err) {
+      session.endSession();
+      // Fallback: try sequential operations if transactions unsupported
+      try {
+        await Product.findByIdAndUpdate(importRecord.productId, {
+          $inc: { availableQuantity: importRecord.quantity },
+        });
+        await Import.findByIdAndDelete(importId);
+        sendSuccess(res, "Import removed successfully", null);
+      } catch (err2) {
+        next(err2);
+      }
+    }
   } catch (error) {
     next(error);
   }
@@ -250,7 +273,6 @@ export const updateImportQuantity = async (req, res, next) => {
   try {
     const { importId } = req.validatedParams;
     const { quantity } = req.validatedData;
-
     const importRecord = await Import.findById(importId);
 
     if (!importRecord) {
@@ -266,41 +288,58 @@ export const updateImportQuantity = async (req, res, next) => {
       );
     }
 
-    const product = await Product.findById(importRecord.productId);
-
-    if (!product) {
-      return sendError(res, "Product not found", 404);
-    }
-
-    // Calculate quantity difference
+    const productId = importRecord.productId;
     const oldQuantity = importRecord.quantity;
     const quantityDifference = quantity - oldQuantity;
 
-    // Check if enough quantity available
-    if (
-      quantityDifference > 0 &&
-      product.availableQuantity < quantityDifference
-    ) {
-      return sendError(
+    // If increasing quantity, attempt to atomically decrement product
+    if (quantityDifference > 0) {
+      const updatedProduct = await Product.findOneAndUpdate(
+        { _id: productId, availableQuantity: { $gte: quantityDifference } },
+        { $inc: { availableQuantity: -quantityDifference } },
+        { new: true },
+      );
+
+      if (!updatedProduct) {
+        const existing = await Product.findById(productId).lean();
+        if (!existing) return sendError(res, "Product not found", 404);
+        return sendError(
+          res,
+          `Only ${existing.availableQuantity} additional units available. Requested: ${quantityDifference}`,
+          400,
+        );
+      }
+
+      importRecord.quantity = quantity;
+      importRecord.totalPrice = quantity * importRecord.productPrice;
+      await importRecord.save();
+      return sendSuccess(
         res,
-        `Only ${product.availableQuantity} additional units available. Requested: ${quantityDifference}`,
-        400,
+        "Import quantity updated successfully",
+        importRecord,
       );
     }
 
-    // Update import quantity
-    importRecord.quantity = quantity;
-    importRecord.totalPrice = quantity * importRecord.productPrice;
-    await importRecord.save();
+    // If decreasing quantity, increment product accordingly and update import
+    if (quantityDifference < 0) {
+      const incAmount = Math.abs(quantityDifference);
+      await Product.findByIdAndUpdate(productId, {
+        $inc: { availableQuantity: incAmount },
+      });
 
-    // Update product quantity using $inc
-    await Product.findByIdAndUpdate(
-      importRecord.productId,
-      { $inc: { availableQuantity: -quantityDifference } },
-      { new: true },
-    );
+      importRecord.quantity = quantity;
+      importRecord.totalPrice = quantity * importRecord.productPrice;
+      await importRecord.save();
 
-    sendSuccess(res, "Import quantity updated successfully", importRecord);
+      return sendSuccess(
+        res,
+        "Import quantity updated successfully",
+        importRecord,
+      );
+    }
+
+    // No change
+    sendSuccess(res, "No changes made", importRecord);
   } catch (error) {
     next(error);
   }
