@@ -57,15 +57,16 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Health Check Route
 app.get("/api/health", (req, res) => {
   res.status(200).json({
-    status: "success",
+    success: true,
     message: "Server is running",
+    data: null,
     timestamp: new Date().toISOString(),
   });
 });
 
 // Root Route
 app.get("/", (req, res) => {
-  res.status(200).json(apiInfo);
+  res.status(200).json({ success: true, message: "OK", data: apiInfo });
 });
 
 // Swagger Documentation Route
@@ -73,7 +74,7 @@ app.use("/api/docs", swaggerRoutes);
 
 // Root API Route
 app.get("/api", (req, res) => {
-  res.status(200).json(apiInfo);
+  res.status(200).json({ success: true, message: "API info", data: apiInfo });
 });
 
 // API Routes

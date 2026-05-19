@@ -12,11 +12,7 @@ router.get(
   "/profile",
   verifyAuth,
   asyncHandler(async (req, res) => {
-    res.status(200).json({
-      status: "success",
-      message: "User profile retrieved",
-      user: req.user,
-    });
+    sendSuccess(res, "User profile retrieved", req.user);
   }),
 );
 

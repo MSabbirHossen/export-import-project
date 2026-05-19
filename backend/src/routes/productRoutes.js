@@ -1,5 +1,6 @@
 import express from "express";
 import verifyAuth from "../middlewares/auth.js";
+import { requireRole } from "../middlewares/authorize.js";
 import {
   validateAddProduct,
   validateUpdateProduct,
@@ -24,7 +25,13 @@ router.get("/all", asyncHandler(getAllProducts));
 router.get("/search", asyncHandler(searchProducts));
 
 // Protected routes
-router.post("/add", verifyAuth, validateAddProduct, asyncHandler(addProduct));
+router.post(
+  "/add",
+  verifyAuth,
+  requireRole(["exporter"]),
+  validateAddProduct,
+  asyncHandler(addProduct),
+);
 router.get(
   "/exports/my-exports",
   verifyAuth,
