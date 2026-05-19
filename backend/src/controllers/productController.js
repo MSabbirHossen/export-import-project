@@ -1,5 +1,6 @@
 import Product from "../models/Product.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { productsToCSV } from "../utils/analytics.js";
 import {
   buildCompleteFilter,
   buildSort,
@@ -283,6 +284,23 @@ export const getExporterProducts = async (req, res, next) => {
     });
 
     sendSuccess(res, "Exporter products retrieved", products);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Export current user's products to CSV
+export const exportExporterProductsToCSV = async (req, res, next) => {
+  try {
+    const products = await Product.find({ exporterId: req.user.uid }).lean();
+    const csvData = productsToCSV(products);
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="my-exports.csv"',
+    );
+    res.send(csvData);
   } catch (error) {
     next(error);
   }

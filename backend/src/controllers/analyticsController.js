@@ -264,7 +264,10 @@ export const exportImportsToCSV = async (req, res, next) => {
     const csvData = importsToCSV(imports);
 
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", 'attachment; filename="imports.csv"');
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="my-imports.csv"',
+    );
     res.send(csvData);
   } catch (error) {
     next(error);

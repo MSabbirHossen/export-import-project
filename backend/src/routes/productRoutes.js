@@ -15,6 +15,7 @@ import {
   updateProduct,
   deleteProduct,
   getExporterProducts,
+  exportExporterProductsToCSV,
 } from "../controllers/productController.js";
 
 const router = express.Router();

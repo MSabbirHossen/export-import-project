@@ -23,8 +23,8 @@ export const getPlatformStats = async () => {
       Product.countDocuments(),
       Import.countDocuments(),
       User.countDocuments(),
-      User.countDocuments({ role: { $in: ["exporter", "both"] } }),
-      User.countDocuments({ role: { $in: ["importer", "both"] } }),
+      User.countDocuments({ role: "exporter" }),
+      User.countDocuments({ role: "importer" }),
     ]);
 
     return {
@@ -490,33 +490,44 @@ export const getImportStatusDistribution = async () => {
  * @returns {string} CSV data
  */
 export const productsToCSV = (products) => {
-  if (!products || products.length === 0) {
-    return "No products to export";
-  }
-
   const headers = [
     "ID",
     "Name",
     "Price",
+    "Currency",
     "Category",
     "Origin Country",
     "Rating",
     "Available Quantity",
+    "Unit",
+    "Description",
     "Created At",
   ];
+  if (!products || products.length === 0) {
+    return headers.join(",");
+  }
+
+  const escapeCsv = (cell) => {
+    const value = cell === undefined || cell === null ? "" : String(cell);
+    return `"${value.replace(/"/g, '""')}"`;
+  };
+
   const rows = products.map((product) => [
     product._id,
-    product.name,
-    product.price,
+    product.name || product.productName || "",
+    product.price ?? product.unitPrice ?? "",
+    product.currency || "USD",
     product.category || "",
-    product.originCountry || "",
-    product.rating || 0,
-    product.availableQuantity,
+    product.originCountry || product.country || "",
+    product.rating ?? 5,
+    product.availableQuantity ?? product.quantity ?? 0,
+    product.unit || "unit",
+    product.description || "",
     new Date(product.createdAt).toISOString(),
   ]);
 
   const csvContent = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${cell}"`).join(","))
+    .map((row) => row.map(escapeCsv).join(","))
     .join("\n");
 
   return csvContent;
@@ -528,33 +539,44 @@ export const productsToCSV = (products) => {
  * @returns {string} CSV data
  */
 export const importsToCSV = (imports) => {
-  if (!imports || imports.length === 0) {
-    return "No imports to export";
-  }
-
   const headers = [
     "ID",
+    "Product ID",
     "Product Name",
     "Quantity",
     "Unit Price",
     "Total Price",
     "Status",
     "Importer Email",
+    "Product Category",
+    "Product Origin Country",
     "Created At",
   ];
+  if (!imports || imports.length === 0) {
+    return headers.join(",");
+  }
+
+  const escapeCsv = (cell) => {
+    const value = cell === undefined || cell === null ? "" : String(cell);
+    return `"${value.replace(/"/g, '""')}"`;
+  };
+
   const rows = imports.map((imp) => [
     imp._id,
-    imp.productName,
+    imp.productId?._id || imp.productId || "",
+    imp.productName || imp.productId?.name || "",
     imp.quantity,
     imp.productPrice,
     imp.totalPrice,
     imp.status,
     imp.importerEmail,
+    imp.productId?.category || "",
+    imp.productId?.originCountry || "",
     new Date(imp.createdAt).toISOString(),
   ]);
 
   const csvContent = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${cell}"`).join(","))
+    .map((row) => row.map(escapeCsv).join(","))
     .join("\n");
 
   return csvContent;
