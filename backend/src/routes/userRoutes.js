@@ -40,7 +40,7 @@ router.post(
         email: req.user.email,
         displayName: validatedData.displayName || req.user.displayName,
         photoURL: req.user.photoURL,
-        role: validatedData.role || "both",
+        role: validatedData.role || "importer",
         phone: validatedData.phone || "",
         address: validatedData.address || {},
       });

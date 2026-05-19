@@ -36,15 +36,28 @@ router.post(
 router.get(
   "/exports/my-exports",
   verifyAuth,
+  requireRole(["exporter"]),
   asyncHandler(getExporterProducts),
+);
+router.get(
+  "/exports/my-exports/csv",
+  verifyAuth,
+  requireRole(["exporter"]),
+  asyncHandler(exportExporterProductsToCSV),
 );
 router.put(
   "/:productId",
   verifyAuth,
+  requireRole(["exporter"]),
   validateUpdateProduct,
   asyncHandler(updateProduct),
 );
-router.delete("/:productId", verifyAuth, asyncHandler(deleteProduct));
+router.delete(
+  "/:productId",
+  verifyAuth,
+  requireRole(["exporter"]),
+  asyncHandler(deleteProduct),
+);
 
 router.get("/:productId", asyncHandler(getProductById));
 

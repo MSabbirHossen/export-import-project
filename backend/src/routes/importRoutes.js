@@ -1,5 +1,6 @@
 import express from "express";
 import verifyAuth from "../middlewares/auth.js";
+import { requireRole } from "../middlewares/authorize.js";
 import {
   validateImportProduct,
   validateUpdateImportQuantity,
@@ -21,15 +22,32 @@ const router = express.Router();
 router.post(
   "/add",
   verifyAuth,
+  requireRole(["importer"]),
   validateImportProduct,
   asyncHandler(importProduct),
 );
-router.get("/my-imports", verifyAuth, asyncHandler(getUserImports));
-router.get("/:importId", verifyAuth, asyncHandler(getImportById));
-router.delete("/:importId", verifyAuth, asyncHandler(removeImport));
+router.get(
+  "/my-imports",
+  verifyAuth,
+  requireRole(["importer"]),
+  asyncHandler(getUserImports),
+);
+router.get(
+  "/:importId",
+  verifyAuth,
+  requireRole(["importer"]),
+  asyncHandler(getImportById),
+);
+router.delete(
+  "/:importId",
+  verifyAuth,
+  requireRole(["importer"]),
+  asyncHandler(removeImport),
+);
 router.put(
   "/:importId",
   verifyAuth,
+  requireRole(["importer"]),
   validateUpdateImportQuantity,
   asyncHandler(updateImportQuantity),
 );

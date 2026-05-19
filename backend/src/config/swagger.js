@@ -53,7 +53,7 @@ const options = {
             },
             role: {
               type: "string",
-              enum: ["importer", "exporter", "both"],
+              enum: ["importer", "exporter"],
             },
             phone: {
               type: "string",

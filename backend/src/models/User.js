@@ -26,8 +26,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["importer", "exporter", "both"],
-      default: "both",
+      enum: ["importer", "exporter"],
+      default: "importer",
     },
     phone: {
       type: String,

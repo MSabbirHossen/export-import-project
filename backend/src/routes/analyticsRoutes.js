@@ -5,6 +5,7 @@
 
 import express from "express";
 import verifyAuth from "../middlewares/auth.js";
+import { requireRole } from "../middlewares/authorize.js";
 import { asyncHandler } from "../middlewares/errorHandler.js";
 import {
   getPlatformStatistics,
@@ -46,6 +47,11 @@ router.get("/user-stats", verifyAuth, asyncHandler(getUserStatisticsAnalytics));
 
 // Export endpoints
 router.get("/export/products", asyncHandler(exportProductsToCSV));
-router.get("/export/imports", verifyAuth, asyncHandler(exportImportsToCSV));
+router.get(
+  "/export/imports",
+  verifyAuth,
+  requireRole(["importer"]),
+  asyncHandler(exportImportsToCSV),
+);
 
 export default router;

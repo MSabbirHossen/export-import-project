@@ -28,13 +28,13 @@ const verifyAuth = async (req, res, next) => {
       const dbUser = await User.findOne({ uid: req.user.uid }).lean();
       if (dbUser) {
         req.user.db = dbUser;
-        req.user.role = dbUser.role || "both";
+        req.user.role = dbUser.role || "importer";
       } else {
-        req.user.role = "both"; // default if no DB record yet
+        req.user.role = "importer"; // safest default until a profile exists
       }
     } catch (err) {
       // Non-fatal - proceed with token info
-      req.user.role = "both";
+      req.user.role = "importer";
     }
 
     next();

@@ -104,7 +104,7 @@ const validatePhone = (phone) => {
 
 // Validate role
 const validateRole = (role) => {
-  const validRoles = ["importer", "exporter", "both"];
+  const validRoles = ["importer", "exporter"];
   return validRoles.includes(role) ? role : null;
 };
 
