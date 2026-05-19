@@ -39,7 +39,7 @@ const validateAddProduct = (req, res, next) => {
     const rawImage = image ?? images?.[0];
     const rawPrice = price ?? unitPrice;
     const rawOrigin = originCountry ?? country;
-    const rawRating = rating ?? 0;
+    const rawRating = rating ?? 5;
     const rawQuantity = availableQuantity ?? quantity;
 
     // Validate name

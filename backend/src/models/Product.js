@@ -41,7 +41,7 @@ const productSchema = new mongoose.Schema(
       type: Number,
       min: [0, "Rating cannot be less than 0"],
       max: [5, "Rating cannot exceed 5"],
-      default: 0,
+      default: 5,
     },
     availableQuantity: {
       type: Number,
@@ -100,7 +100,11 @@ productSchema.pre("validate", function normalizeProductFields(next) {
   this.name = this.name || this.productName;
   this.productName = this.productName || this.name;
   this.image = this.image || firstImage;
-  this.images = this.images?.length ? this.images : this.image ? [this.image] : [];
+  this.images = this.images?.length
+    ? this.images
+    : this.image
+      ? [this.image]
+      : [];
   this.price = this.price ?? this.unitPrice;
   this.unitPrice = this.unitPrice ?? this.price;
   this.originCountry = this.originCountry || this.country;
