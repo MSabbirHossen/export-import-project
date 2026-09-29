@@ -1,6 +1,7 @@
 import { verifyToken } from "../config/firebase.js";
 import User from "../models/User.js";
 import { sendError } from "../utils/response.js";
+import { normalizeRole } from "../utils/roles.js";
 
 // Verify Firebase JWT Token and attach database user profile (if exists)
 const verifyAuth = async (req, res, next) => {
@@ -28,7 +29,7 @@ const verifyAuth = async (req, res, next) => {
       const dbUser = await User.findOne({ uid: req.user.uid }).lean();
       if (dbUser) {
         req.user.db = dbUser;
-        req.user.role = dbUser.role || "importer";
+        req.user.role = normalizeRole(dbUser.role) || "importer";
       } else {
         req.user.role = "importer"; // safest default until a profile exists
       }

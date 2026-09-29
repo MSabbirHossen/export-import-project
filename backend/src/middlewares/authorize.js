@@ -1,4 +1,6 @@
 // Role-based authorization middleware
+import { canAccessRole } from "../utils/roles.js";
+
 const requireRole = (allowedRoles = []) => {
   return (req, res, next) => {
     try {
@@ -6,7 +8,7 @@ const requireRole = (allowedRoles = []) => {
 
       if (!allowedRoles || allowedRoles.length === 0) return next();
 
-      if (allowedRoles.includes(userRole)) {
+      if (allowedRoles.some((role) => canAccessRole(userRole, role))) {
         return next();
       }
 
