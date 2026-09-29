@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { VALID_ROLES } from "../utils/roles.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -26,7 +27,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["importer", "exporter"],
+      enum: VALID_ROLES,
       default: "importer",
     },
     phone: {
