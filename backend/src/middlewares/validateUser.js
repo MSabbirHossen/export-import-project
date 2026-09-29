@@ -28,7 +28,7 @@ const validateSaveUserProfile = (req, res, next) => {
     if (role !== undefined) {
       const validatedRole = validateRole(role);
       if (!validatedRole) {
-        errors.push("Role must be one of: importer, exporter");
+        errors.push("Role must be one of: importer, exporter, both");
       } else {
         validatedData.role = validatedRole;
       }

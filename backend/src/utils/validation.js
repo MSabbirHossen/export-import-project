@@ -104,8 +104,12 @@ const validatePhone = (phone) => {
 
 // Validate role
 const validateRole = (role) => {
-  const validRoles = ["importer", "exporter"];
-  return validRoles.includes(role) ? role : null;
+  const validRoles = ["importer", "exporter", "both"];
+
+  if (typeof role !== "string") return null;
+
+  const normalized = role.trim().toLowerCase();
+  return validRoles.includes(normalized) ? normalized : null;
 };
 
 // Validate MongoDB ObjectId
